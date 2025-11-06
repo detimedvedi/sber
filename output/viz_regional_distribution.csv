@@ -1,0 +1,333 @@
+﻿region,anomaly_type,count,avg_severity
+Алтайский край,cross_source_discrepancy,69,70.0
+Алтайский край,geographic_anomaly,116,94.69827586206897
+Алтайский край,logical_inconsistency,32,63.615625
+Алтайский край,statistical_outlier,19,73.15789473684211
+Амурская область,cross_source_discrepancy,27,70.0
+Амурская область,geographic_anomaly,47,89.2872340425532
+Амурская область,logical_inconsistency,49,71.65673469387755
+Амурская область,statistical_outlier,22,69.54545454545455
+Архангельская область,cross_source_discrepancy,24,70.0
+Архангельская область,geographic_anomaly,62,93.39516129032258
+Архангельская область,logical_inconsistency,31,72.27548387096775
+Архангельская область,statistical_outlier,25,72.4
+Астраханская область,cross_source_discrepancy,13,70.0
+Астраханская область,geographic_anomaly,36,94.04166666666667
+Астраханская область,logical_inconsistency,14,65.71428571428571
+Астраханская область,statistical_outlier,11,79.0909090909091
+Белгородская область,cross_source_discrepancy,22,70.0
+Белгородская область,geographic_anomaly,43,94.1046511627907
+Белгородская область,logical_inconsistency,11,81.36363636363636
+Белгородская область,statistical_outlier,14,73.57142857142857
+Брянская область,cross_source_discrepancy,31,70.0
+Брянская область,geographic_anomaly,48,93.5
+Брянская область,logical_inconsistency,10,88.0
+Брянская область,statistical_outlier,8,77.5
+Владимирская область,cross_source_discrepancy,20,70.0
+Владимирская область,geographic_anomaly,29,90.58620689655173
+Владимирская область,logical_inconsistency,39,57.96179487179488
+Владимирская область,statistical_outlier,11,60.90909090909091
+Волгоградская область,cross_source_discrepancy,38,70.0
+Волгоградская область,geographic_anomaly,55,94.32727272727273
+Волгоградская область,logical_inconsistency,23,59.63652173913044
+Волгоградская область,statistical_outlier,20,80.5
+Вологодская область,cross_source_discrepancy,25,70.0
+Вологодская область,geographic_anomaly,62,91.62903225806451
+Вологодская область,logical_inconsistency,37,77.16216216216216
+Вологодская область,statistical_outlier,17,79.41176470588235
+Воронежская область,cross_source_discrepancy,34,70.0
+Воронежская область,geographic_anomaly,71,91.21126760563381
+Воронежская область,logical_inconsistency,2,75.0
+Воронежская область,statistical_outlier,9,75.55555555555556
+Еврейская автономная область,cross_source_discrepancy,6,70.0
+Еврейская автономная область,geographic_anomaly,17,94.26470588235294
+Еврейская автономная область,logical_inconsistency,17,62.13823529411764
+Забайкальский край,cross_source_discrepancy,35,70.0
+Забайкальский край,geographic_anomaly,37,94.91891891891892
+Забайкальский край,logical_inconsistency,68,64.1410294117647
+Забайкальский край,statistical_outlier,18,74.44444444444444
+Ивановская область,cross_source_discrepancy,27,70.0
+Ивановская область,geographic_anomaly,43,92.29069767441861
+Ивановская область,logical_inconsistency,26,58.13423076923077
+Ивановская область,statistical_outlier,7,78.57142857142857
+Иркутская область,cross_source_discrepancy,41,70.0
+Иркутская область,geographic_anomaly,100,91.81
+Иркутская область,logical_inconsistency,20,59.246500000000005
+Иркутская область,statistical_outlier,44,69.0909090909091
+Кабардино-Балкарская Республика,cross_source_discrepancy,13,70.0
+Кабардино-Балкарская Республика,geographic_anomaly,18,93.5
+Кабардино-Балкарская Республика,logical_inconsistency,128,64.071328125
+Кабардино-Балкарская Республика,statistical_outlier,17,85.29411764705883
+Калининградская область,cross_source_discrepancy,22,70.0
+Калининградская область,geographic_anomaly,62,93.51612903225806
+Калининградская область,logical_inconsistency,30,74.05300000000001
+Калининградская область,statistical_outlier,18,70.0
+Калужская область,cross_source_discrepancy,26,70.0
+Калужская область,geographic_anomaly,71,94.78169014084507
+Калужская область,logical_inconsistency,84,60.80833333333333
+Калужская область,statistical_outlier,16,71.25
+Камчатский край,cross_source_discrepancy,9,70.0
+Камчатский край,geographic_anomaly,47,90.85106382978724
+Камчатский край,logical_inconsistency,38,74.73684210526316
+Камчатский край,statistical_outlier,120,67.5
+Карачаево-Черкесская Республика,cross_source_discrepancy,12,70.0
+Карачаево-Черкесская Республика,geographic_anomaly,16,90.25
+Карачаево-Черкесская Республика,logical_inconsistency,48,64.75104166666667
+Карачаево-Черкесская Республика,statistical_outlier,4,80.0
+Кемеровская область,cross_source_discrepancy,33,70.0
+Кемеровская область,geographic_anomaly,61,92.64754098360656
+Кемеровская область,logical_inconsistency,41,74.07195121951219
+Кемеровская область,statistical_outlier,21,74.28571428571429
+Кировская область,cross_source_discrepancy,44,70.0
+Кировская область,geographic_anomaly,84,92.4702380952381
+Кировская область,logical_inconsistency,30,74.66666666666667
+Кировская область,statistical_outlier,14,84.28571428571429
+Костромская область,cross_source_discrepancy,29,70.0
+Костромская область,geographic_anomaly,55,94.32727272727273
+Костромская область,logical_inconsistency,25,75.74520000000001
+Костромская область,statistical_outlier,13,79.23076923076923
+Краснодарский край,cross_source_discrepancy,45,70.0
+Краснодарский край,geographic_anomaly,81,94.22222222222223
+Краснодарский край,logical_inconsistency,2,75.0
+Краснодарский край,statistical_outlier,68,63.529411764705884
+Красноярский край,cross_source_discrepancy,54,70.0
+Красноярский край,geographic_anomaly,150,94.97666666666667
+Красноярский край,logical_inconsistency,36,74.44444444444444
+Красноярский край,statistical_outlier,59,70.33898305084746
+Курганская область,cross_source_discrepancy,26,70.0
+Курганская область,geographic_anomaly,71,92.14084507042253
+Курганская область,logical_inconsistency,25,83.7444
+Курганская область,statistical_outlier,8,75.0
+Курская область,cross_source_discrepancy,33,70.0
+Курская область,geographic_anomaly,60,94.8
+Курская область,statistical_outlier,10,74.0
+Ленинградская область,cross_source_discrepancy,18,70.0
+Ленинградская область,geographic_anomaly,31,92.45161290322581
+Ленинградская область,logical_inconsistency,38,63.62789473684211
+Ленинградская область,statistical_outlier,28,69.28571428571429
+Липецкая область,cross_source_discrepancy,20,70.0
+Липецкая область,geographic_anomaly,40,92.6875
+Липецкая область,logical_inconsistency,17,59.5735294117647
+Липецкая область,statistical_outlier,7,75.71428571428571
+Магаданская область,cross_source_discrepancy,9,70.0
+Магаданская область,geographic_anomaly,35,90.3
+Магаданская область,logical_inconsistency,42,76.9047619047619
+Магаданская область,statistical_outlier,87,69.54022988505747
+Москва,cross_source_discrepancy,146,70.0
+Москва,geographic_anomaly,636,90.75078616352201
+Москва,logical_inconsistency,384,73.15104166666667
+Москва,statistical_outlier,1871,71.25601282736504
+Московская область,cross_source_discrepancy,58,70.0
+Московская область,geographic_anomaly,81,90.71604938271605
+Московская область,logical_inconsistency,182,73.30456043956045
+Московская область,statistical_outlier,227,65.99118942731278
+Мурманская область,cross_source_discrepancy,16,70.0
+Мурманская область,geographic_anomaly,33,93.43939393939394
+Мурманская область,logical_inconsistency,13,79.61538461538461
+Мурманская область,statistical_outlier,38,70.52631578947368
+Ненецкий автономный округ,cross_source_discrepancy,2,70.0
+Ненецкий автономный округ,statistical_outlier,14,58.57142857142857
+Нижегородская область,cross_source_discrepancy,50,70.0
+Нижегородская область,geographic_anomaly,124,94.65322580645162
+Нижегородская область,logical_inconsistency,77,72.76623376623377
+Нижегородская область,statistical_outlier,23,68.69565217391305
+Новгородская область,cross_source_discrepancy,22,70.0
+Новгородская область,geographic_anomaly,52,92.125
+Новгородская область,logical_inconsistency,61,60.08606557377049
+Новгородская область,statistical_outlier,6,70.0
+Новосибирская область,cross_source_discrepancy,35,70.0
+Новосибирская область,geographic_anomaly,97,93.56701030927834
+Новосибирская область,logical_inconsistency,19,61.78578947368421
+Новосибирская область,statistical_outlier,17,81.76470588235294
+Омская область,cross_source_discrepancy,33,70.0
+Омская область,geographic_anomaly,55,93.04545454545455
+Омская область,logical_inconsistency,5,57.126
+Омская область,statistical_outlier,5,92.0
+Оренбургская область,cross_source_discrepancy,41,70.0
+Оренбургская область,geographic_anomaly,83,92.95180722891567
+Оренбургская область,logical_inconsistency,12,61.553333333333335
+Оренбургская область,statistical_outlier,16,72.5
+Орловская область,cross_source_discrepancy,27,70.0
+Орловская область,geographic_anomaly,49,95.62244897959184
+Орловская область,logical_inconsistency,13,57.0923076923077
+Орловская область,statistical_outlier,14,80.71428571428571
+Пензенская область,cross_source_discrepancy,30,70.0
+Пензенская область,geographic_anomaly,49,91.64285714285714
+Пензенская область,logical_inconsistency,16,57.95125
+Пензенская область,statistical_outlier,9,78.88888888888889
+Пермский край,cross_source_discrepancy,42,70.0
+Пермский край,geographic_anomaly,113,92.1283185840708
+Пермский край,logical_inconsistency,77,80.92012987012987
+Пермский край,statistical_outlier,16,65.625
+Приморский край,cross_source_discrepancy,33,70.0
+Приморский край,geographic_anomaly,85,93.70588235294117
+Приморский край,logical_inconsistency,66,64.95060606060606
+Приморский край,statistical_outlier,32,67.1875
+Псковская область,cross_source_discrepancy,26,70.0
+Псковская область,geographic_anomaly,58,94.62068965517241
+Псковская область,logical_inconsistency,50,62.8508
+Псковская область,statistical_outlier,7,67.14285714285714
+Республика Адыгея,cross_source_discrepancy,9,70.0
+Республика Адыгея,geographic_anomaly,27,94.22222222222223
+Республика Адыгея,logical_inconsistency,24,58.657916666666665
+Республика Адыгея,statistical_outlier,9,63.333333333333336
+Республика Алтай,cross_source_discrepancy,11,70.0
+Республика Алтай,geographic_anomaly,18,93.5
+Республика Алтай,logical_inconsistency,20,59.07000000000001
+Республика Алтай,statistical_outlier,1,50.0
+Республика Башкортостан,cross_source_discrepancy,62,70.0
+Республика Башкортостан,geographic_anomaly,126,92.26190476190476
+Республика Башкортостан,logical_inconsistency,44,58.9765909090909
+Республика Башкортостан,statistical_outlier,31,65.80645161290323
+Республика Бурятия,cross_source_discrepancy,22,70.0
+Республика Бурятия,geographic_anomaly,46,90.67391304347827
+Республика Бурятия,logical_inconsistency,20,61.56849999999999
+Республика Бурятия,statistical_outlier,5,88.0
+Республика Дагестан,cross_source_discrepancy,48,70.0
+Республика Дагестан,geographic_anomaly,77,90.06493506493507
+Республика Дагестан,logical_inconsistency,210,68.51014285714285
+Республика Дагестан,statistical_outlier,70,86.57142857142857
+Республика Ингушетия,cross_source_discrepancy,9,70.0
+Республика Ингушетия,geographic_anomaly,10,92.2
+Республика Ингушетия,logical_inconsistency,48,72.105
+Республика Ингушетия,statistical_outlier,15,87.33333333333333
+Республика Калмыкия,cross_source_discrepancy,13,70.0
+Республика Калмыкия,geographic_anomaly,14,93.03571428571429
+Республика Калмыкия,logical_inconsistency,14,64.28571428571429
+Республика Калмыкия,statistical_outlier,8,76.25
+Республика Карелия,cross_source_discrepancy,18,70.0
+Республика Карелия,geographic_anomaly,23,94.91304347826087
+Республика Карелия,logical_inconsistency,19,68.46947368421053
+Республика Карелия,statistical_outlier,8,70.0
+Республика Коми,cross_source_discrepancy,20,70.0
+Республика Коми,geographic_anomaly,19,94.86842105263158
+Республика Коми,logical_inconsistency,9,59.642222222222216
+Республика Коми,statistical_outlier,12,66.66666666666667
+Республика Крым,cross_source_discrepancy,25,70.0
+Республика Крым,geographic_anomaly,38,91.78947368421052
+Республика Крым,logical_inconsistency,5,75.0
+Республика Крым,statistical_outlier,10,60.0
+Республика Марий Эл,cross_source_discrepancy,17,70.0
+Республика Марий Эл,geographic_anomaly,35,92.2
+Республика Марий Эл,logical_inconsistency,9,57.91555555555556
+Республика Марий Эл,statistical_outlier,4,70.0
+Республика Мордовия,cross_source_discrepancy,23,70.0
+Республика Мордовия,geographic_anomaly,32,90.25
+Республика Мордовия,logical_inconsistency,3,78.33333333333333
+Республика Мордовия,statistical_outlier,6,80.0
+Республика Саха (Якутия),cross_source_discrepancy,32,70.0
+Республика Саха (Якутия),geographic_anomaly,64,90.5703125
+Республика Саха (Якутия),logical_inconsistency,71,71.42323943661972
+Республика Саха (Якутия),statistical_outlier,128,63.59375
+Республика Северная Осетия — Алания,cross_source_discrepancy,9,70.0
+Республика Северная Осетия — Алания,geographic_anomaly,23,94.06521739130434
+Республика Северная Осетия — Алания,logical_inconsistency,197,65.6041116751269
+Республика Северная Осетия — Алания,statistical_outlier,12,81.66666666666667
+Республика Татарстан,cross_source_discrepancy,45,70.0
+Республика Татарстан,geographic_anomaly,114,92.8157894736842
+Республика Татарстан,logical_inconsistency,12,62.41583333333333
+Республика Татарстан,statistical_outlier,38,72.63157894736842
+Республика Тыва,cross_source_discrepancy,18,70.0
+Республика Тыва,geographic_anomaly,29,93.39655172413794
+Республика Тыва,logical_inconsistency,45,66.19355555555556
+Республика Тыва,statistical_outlier,14,85.71428571428571
+Республика Хакасия,cross_source_discrepancy,13,70.0
+Республика Хакасия,geographic_anomaly,21,90.71428571428571
+Республика Хакасия,logical_inconsistency,6,60.0
+Республика Хакасия,statistical_outlier,5,66.0
+Ростовская область,cross_source_discrepancy,55,70.0
+Ростовская область,geographic_anomaly,99,92.31818181818181
+Ростовская область,statistical_outlier,34,69.41176470588235
+Рязанская область,cross_source_discrepancy,28,70.0
+Рязанская область,geographic_anomaly,53,93.00943396226415
+Рязанская область,logical_inconsistency,67,59.94955223880597
+Рязанская область,statistical_outlier,11,79.0909090909091
+Самарская область,cross_source_discrepancy,37,70.0
+Самарская область,geographic_anomaly,69,92.47826086956522
+Самарская область,logical_inconsistency,30,56.13866666666667
+Самарская область,statistical_outlier,20,75.5
+Санкт-Петербург,geographic_anomaly,132,92.67045454545455
+Санкт-Петербург,logical_inconsistency,287,71.88003484320558
+Санкт-Петербург,statistical_outlier,601,66.30615640599002
+Саратовская область,cross_source_discrepancy,40,70.0
+Саратовская область,geographic_anomaly,65,91.63076923076923
+Саратовская область,logical_inconsistency,19,79.70631578947369
+Саратовская область,statistical_outlier,13,80.0
+Сахалинская область,cross_source_discrepancy,17,70.0
+Сахалинская область,geographic_anomaly,55,91.7
+Сахалинская область,logical_inconsistency,29,69.37827586206896
+Сахалинская область,statistical_outlier,107,65.70093457943925
+Свердловская область,cross_source_discrepancy,69,70.0
+Свердловская область,geographic_anomaly,82,92.86585365853658
+Свердловская область,logical_inconsistency,80,65.825875
+Свердловская область,statistical_outlier,27,75.55555555555556
+Севастополь,geographic_anomaly,7,97.21428571428571
+Севастополь,logical_inconsistency,9,81.66666666666667
+Севастополь,statistical_outlier,6,63.333333333333336
+Смоленская область,cross_source_discrepancy,27,70.0
+Смоленская область,geographic_anomaly,71,95.05633802816901
+Смоленская область,logical_inconsistency,71,61.574929577464786
+Смоленская область,statistical_outlier,8,70.0
+Ставропольский край,cross_source_discrepancy,33,70.0
+Ставропольский край,geographic_anomaly,82,91.76829268292683
+Ставропольский край,logical_inconsistency,118,64.12271186440678
+Ставропольский край,statistical_outlier,35,64.57142857142857
+Тамбовская область,cross_source_discrepancy,30,70.0
+Тамбовская область,geographic_anomaly,76,94.71052631578948
+Тамбовская область,logical_inconsistency,32,76.6746875
+Тамбовская область,statistical_outlier,11,70.0
+Тверская область,cross_source_discrepancy,38,70.0
+Тверская область,geographic_anomaly,88,90.86363636363636
+Тверская область,logical_inconsistency,162,67.42938271604937
+Тверская область,statistical_outlier,10,78.0
+Томская область,cross_source_discrepancy,19,70.0
+Томская область,geographic_anomaly,37,92.37837837837837
+Томская область,logical_inconsistency,17,66.01058823529412
+Томская область,statistical_outlier,11,81.81818181818181
+Тульская область,cross_source_discrepancy,26,70.0
+Тульская область,geographic_anomaly,39,91.5
+Тульская область,logical_inconsistency,93,63.5205376344086
+Тульская область,statistical_outlier,14,75.71428571428571
+Тюменская область,cross_source_discrepancy,26,70.0
+Тюменская область,geographic_anomaly,80,93.90625
+Тюменская область,logical_inconsistency,7,56.58428571428572
+Тюменская область,statistical_outlier,17,75.29411764705883
+Удмуртская Республика,cross_source_discrepancy,30,70.0
+Удмуртская Республика,geographic_anomaly,73,93.05479452054794
+Удмуртская Республика,logical_inconsistency,32,79.388125
+Удмуртская Республика,statistical_outlier,8,90.0
+Ульяновская область,cross_source_discrepancy,24,70.0
+Ульяновская область,geographic_anomaly,45,94.36666666666666
+Ульяновская область,statistical_outlier,8,88.75
+Хабаровский край,cross_source_discrepancy,16,70.0
+Хабаровский край,geographic_anomaly,28,94.35714285714286
+Хабаровский край,logical_inconsistency,22,70.59636363636363
+Хабаровский край,statistical_outlier,33,74.54545454545455
+Ханты-Мансийский автономный округ — Югра,cross_source_discrepancy,22,70.0
+Ханты-Мансийский автономный округ — Югра,geographic_anomaly,37,88.54054054054055
+Ханты-Мансийский автономный округ — Югра,logical_inconsistency,8,62.86125
+Ханты-Мансийский автономный округ — Югра,statistical_outlier,95,60.8421052631579
+Челябинская область,cross_source_discrepancy,40,70.0
+Челябинская область,geographic_anomaly,72,93.22916666666667
+Челябинская область,logical_inconsistency,36,67.31666666666666
+Челябинская область,statistical_outlier,27,70.0
+Чеченская Республика,cross_source_discrepancy,17,70.0
+Чеченская Республика,geographic_anomaly,25,95.32
+Чеченская Республика,logical_inconsistency,94,71.44861702127659
+Чеченская Республика,statistical_outlier,46,79.1304347826087
+Чувашская Республика,cross_source_discrepancy,26,70.0
+Чувашская Республика,geographic_anomaly,55,93.26363636363637
+Чувашская Республика,logical_inconsistency,27,81.29629629629629
+Чувашская Республика,statistical_outlier,18,78.88888888888889
+Чукотский автономный округ,cross_source_discrepancy,2,70.0
+Чукотский автономный округ,geographic_anomaly,83,90.49397590361446
+Чукотский автономный округ,logical_inconsistency,24,77.5
+Чукотский автономный округ,statistical_outlier,92,77.71739130434783
+Ямало-Ненецкий автономный округ,cross_source_discrepancy,13,70.0
+Ямало-Ненецкий автономный округ,geographic_anomaly,81,89.88888888888889
+Ямало-Ненецкий автономный округ,logical_inconsistency,28,75.31321428571428
+Ямало-Ненецкий автономный округ,statistical_outlier,155,71.54838709677419
+Ярославская область,cross_source_discrepancy,19,70.0
+Ярославская область,geographic_anomaly,38,93.32894736842105
+Ярославская область,logical_inconsistency,27,66.38407407407406
+Ярославская область,statistical_outlier,11,77.27272727272727

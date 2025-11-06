@@ -1,0 +1,237 @@
+# Configuration for СберИндекс Anomaly Detection System
+
+# Detection profile (strict, normal, relaxed)
+# UPDATED: Switched to relaxed to reduce false positives (was: normal)
+detection_profile: "relaxed"
+
+# Пороги для детекции аномалий
+thresholds:
+  statistical:
+    z_score: 3.0
+    iqr_multiplier: 1.5
+    percentile_lower: 1
+    percentile_upper: 99
+
+  temporal:
+    spike_threshold: 100 # процент изменения
+    drop_threshold: -50
+    volatility_multiplier: 2.0
+
+  geographic:
+    regional_z_score: 3.5  # UPDATED: Increased from 2.0 to reduce geographic false positives
+    cluster_threshold: 4.0  # UPDATED: Increased from 2.5 for Russia's natural heterogeneity
+
+  cross_source:
+    correlation_threshold: 0.5
+    discrepancy_threshold: 50 # процент
+
+  logical:
+    check_negative_values: true
+    check_impossible_ratios: true
+
+# Threshold profiles for different detection modes
+threshold_profiles:
+  strict:
+    statistical:
+      z_score: 2.5
+      iqr_multiplier: 1.2
+      percentile_lower: 2
+      percentile_upper: 98
+    
+    temporal:
+      spike_threshold: 75
+      drop_threshold: -40
+      volatility_multiplier: 1.5
+    
+    geographic:
+      regional_z_score: 1.5
+      cluster_threshold: 2.0
+    
+    cross_source:
+      correlation_threshold: 0.6
+      discrepancy_threshold: 40
+    
+    logical:
+      check_negative_values: true
+      check_impossible_ratios: true
+  
+  normal:
+    statistical:
+      z_score: 3.0
+      iqr_multiplier: 1.5
+      percentile_lower: 1
+      percentile_upper: 99
+    
+    temporal:
+      spike_threshold: 100
+      drop_threshold: -50
+      volatility_multiplier: 2.0
+    
+    geographic:
+      regional_z_score: 2.0
+      cluster_threshold: 2.5
+    
+    cross_source:
+      correlation_threshold: 0.5
+      discrepancy_threshold: 50
+    
+    logical:
+      check_negative_values: true
+      check_impossible_ratios: true
+  
+  relaxed:
+    statistical:
+      z_score: 3.5
+      iqr_multiplier: 2.0
+      percentile_lower: 0.5
+      percentile_upper: 99.5
+    
+    temporal:
+      spike_threshold: 150
+      drop_threshold: -60
+      volatility_multiplier: 2.5
+    
+    geographic:
+      regional_z_score: 3.0
+      cluster_threshold: 3.0
+    
+    cross_source:
+      correlation_threshold: 0.4
+      discrepancy_threshold: 60
+    
+    logical:
+      check_negative_values: true
+      check_impossible_ratios: true
+
+# Настройки экспорта
+export:
+  output_dir: "output"
+  timestamp_format: "%Y%m%d_%H%M%S"
+  top_n_municipalities: 50
+
+# Настройки визуализации
+visualization:
+  figure_size: [12, 8]
+  dpi: 300
+  style: "seaborn-v0_8"
+
+# Настройки логирования
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "output/anomaly_detection.log"
+
+# Пути к данным
+data_paths:
+  sberindex:
+    connection: "connection.parquet"
+    consumption: "consumption.parquet"
+    market_access: "market_access.parquet"
+
+  rosstat:
+    population: "rosstat/2_bdmo_population.parquet"
+    migration: "rosstat/3_bdmo_migration.parquet"
+    salary: "rosstat/4_bdmo_salary.parquet"
+
+  municipal_dict:
+    excel: "t_dict_municipal/t_dict_municipal_districts.xlsx"
+    geopackage: "t_dict_municipal/t_dict_municipal_districts_poly.gpkg"
+
+# Настройки обработки данных
+data_processing:
+  random_seed: 42
+  handle_missing: "log_and_continue"
+  min_data_completeness: 0.5
+
+# Настройки обработки пропущенных значений
+missing_value_handling:
+  # Threshold for flagging indicators with high missing values (percentage)
+  indicator_threshold: 50.0
+  
+  # Threshold for flagging municipalities with high missing indicators (percentage)
+  municipality_threshold: 70.0
+
+# Настройки обработки временных данных
+# UPDATED: Enabled temporal analysis to detect trends and systematic changes
+temporal:
+  enabled: true
+  aggregation_method: "mean"  # latest, mean, median
+  auto_detect: true
+
+# Настройки классификации муниципалитетов
+municipality_classification:
+  enabled: true
+  urban_population_threshold: 50000
+  capital_cities:
+    - "Москва"
+    - "Санкт-Петербург"
+    - "Севастополь"
+    - "Екатеринбург"
+    - "Новосибирск"
+    - "Казань"
+    - "Нижний Новгород"
+    - "Челябинск"
+    - "Самара"
+    - "Омск"
+    - "Ростов-на-Дону"
+    - "Уфа"
+    - "Красноярск"
+    - "Воронеж"
+    - "Пермь"
+    - "Волгоград"
+
+# Настройки робастной статистики
+robust_statistics:
+  enabled: true
+  use_median: true
+  use_mad: true
+  winsorization_limits: [0.01, 0.99]
+  log_transform_skewness_threshold: 2.0
+
+# Веса приоритетов для ранжирования аномалий
+priority_weights:
+  anomaly_types:
+    logical_inconsistency: 0.9  # UPDATED: Reduced from 1.5 (many false positives for legitimate patterns)
+    cross_source_discrepancy: 1.2
+    temporal_anomaly: 1.3  # UPDATED: Increased priority for temporal patterns
+    statistical_outlier: 1.0
+    geographic_anomaly: 0.7  # UPDATED: Reduced from 0.8 (Russia is naturally heterogeneous)
+  
+  indicators:
+    population: 1.3
+    consumption_total: 1.2
+    salary: 1.1
+    default: 1.0
+
+# Настройки автоматической настройки порогов (Auto-tuning)
+# UPDATED: Enabled auto-tuning to optimize thresholds and reduce false positives
+auto_tuning:
+  # Enable/disable auto-tuning (opt-in, disabled by default)
+  enabled: true
+  
+  # Target false positive rate (0.0 - 1.0)
+  # System will optimize thresholds to achieve this FPR
+  target_false_positive_rate: 0.05
+  
+  # Minimum expected anomalies per detector
+  # If fewer anomalies detected, thresholds may be too strict
+  min_anomalies_per_detector: 10
+  
+  # Maximum expected anomalies per detector
+  # If more anomalies detected, thresholds may be too relaxed
+  max_anomalies_per_detector: 1000
+  
+  # Interval for periodic re-tuning (in days)
+  # System will re-evaluate thresholds based on new data
+  retuning_interval_days: 30
+  
+  # Minimum data points required for auto-tuning
+  min_data_points: 100
+  
+  # Confidence level for threshold validation (0.0 - 1.0)
+  # Ensures at least this percentage of normal municipalities are not flagged
+  validation_confidence: 0.95
+  
+  # Export tuned thresholds to file
+  export_tuned_config: true
+  export_path: "output/tuned_thresholds.yaml"
