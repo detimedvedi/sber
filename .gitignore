@@ -13,9 +13,9 @@ connection.parquet
 consumption.parquet
 market_access.parquet
 
-# Excel and CSV data files
+# Excel and data files
 *.xlsx
-*.csv
+
 
 # GeoPackage files
 *.gpkg
@@ -25,11 +25,9 @@ rosstat/
 t_dict_municipal/
 
 # ============================================
-# OUTPUT AND GENERATED FILES
+# logs
 # ============================================
 
-# Output directory
-output/
 
 # Log files
 *.log
@@ -208,3 +206,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+.kiro/
