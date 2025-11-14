@@ -131,6 +131,49 @@ class DataLoader:
                 data[key] = None
         
         return data
+    
+    def load_connection_data(self) -> pd.DataFrame:
+        """
+        Load connection graph data (4.7M connections between territories).
+        
+        Returns:
+            DataFrame with columns:
+            - territory_id_x: Source territory
+            - territory_id_y: Target territory
+            - distance: Distance in km
+            - type: Connection type (highway, etc.)
+            
+            Returns empty DataFrame if file not found or invalid.
+        """
+        logger.info("Loading connection graph...")
+        file_path = self.base_path / 'connection.parquet'
+        
+        try:
+            df = pd.read_parquet(file_path)
+            logger.info(f"Loaded connection graph: {df.shape[0]:,} connections, {df.shape[1]} columns")
+            
+            # Validate structure
+            required_cols = ['territory_id_x', 'territory_id_y', 'distance']
+            missing = set(required_cols) - set(df.columns)
+            if missing:
+                logger.warning(f"Missing required columns in connection data: {missing}")
+                return pd.DataFrame()
+            
+            # Log statistics
+            unique_territories = set(df['territory_id_x'].unique()) | set(df['territory_id_y'].unique())
+            logger.info(f"Connection graph covers {len(unique_territories)} territories")
+            
+            if 'type' in df.columns:
+                logger.info(f"Connection types: {df['type'].value_counts().to_dict()}")
+            
+            return df
+            
+        except FileNotFoundError:
+            logger.warning(f"Connection file not found: {file_path}")
+            return pd.DataFrame()
+        except Exception as e:
+            self._handle_load_error(e, file_path, 'connection', 'load_connection_data')
+            return pd.DataFrame()
 
     def load_rosstat_data(self) -> Dict[str, pd.DataFrame]:
         """
@@ -217,26 +260,57 @@ class DataLoader:
             logger.warning("No municipal dictionary available, will build from data sources")
         
         # Process consumption data (pivot categories to columns)
+        # FIXED: Preserve temporal structure (date column) instead of aggregating
         if sberindex.get('consumption') is not None:
             consumption_df = sberindex['consumption']
-            # Pivot categories to columns and aggregate by territory_id
-            consumption_pivot = consumption_df.pivot_table(
-                index='territory_id',
-                columns='category',
-                values='value',
-                aggfunc='mean'
-            ).reset_index()
-            # Rename columns with prefix
-            consumption_pivot.columns = ['territory_id'] + [
-                f'consumption_{col}' for col in consumption_pivot.columns[1:]
-            ]
+            
+            # Check if temporal data exists
+            has_date = 'date' in consumption_df.columns
+            
+            if has_date:
+                # Preserve ALL periods for temporal analysis
+                logger.info(f"Preserving temporal structure: {consumption_df['date'].nunique()} periods")
+                
+                consumption_pivot = consumption_df.pivot(
+                    index=['territory_id', 'date'],  # ✅ PRESERVE DATE
+                    columns='category',
+                    values='value'
+                ).reset_index()
+                
+                # Rename columns with prefix
+                consumption_pivot.columns = ['territory_id', 'date'] + [
+                    f'consumption_{col}' for col in consumption_pivot.columns[2:]
+                ]
+                
+                logger.info(f"Consumption data shape after pivot: {consumption_pivot.shape[0]} rows, {consumption_pivot.shape[1]} columns")
+            else:
+                # No temporal data - use simple pivot with aggregation
+                consumption_pivot = consumption_df.pivot_table(
+                    index='territory_id',
+                    columns='category',
+                    values='value',
+                    aggfunc='mean'
+                ).reset_index()
+                
+                consumption_pivot.columns = ['territory_id'] + [
+                    f'consumption_{col}' for col in consumption_pivot.columns[1:]
+                ]
             
             if unified_df is not None:
-                unified_df = unified_df.merge(consumption_pivot, on='territory_id', how='left')
+                # When merging with temporal data, we need to handle the case where
+                # unified_df (from municipal dict) doesn't have a date column
+                if has_date and 'date' not in unified_df.columns:
+                    # Cross join: each territory in municipal dict gets all date periods
+                    logger.info("Cross-joining municipal data with temporal consumption data")
+                    unified_df = unified_df.merge(consumption_pivot, on='territory_id', how='right')
+                else:
+                    # Standard merge
+                    merge_cols = ['territory_id', 'date'] if has_date else ['territory_id']
+                    unified_df = unified_df.merge(consumption_pivot, on=merge_cols, how='left')
             else:
                 unified_df = consumption_pivot
             
-            logger.info(f"Merged consumption data: {len(consumption_pivot.columns)-1} categories")
+            logger.info(f"Merged consumption data: {len(consumption_pivot.columns)-2 if has_date else len(consumption_pivot.columns)-1} categories")
         
         # Process market access data
         if sberindex.get('market_access') is not None:

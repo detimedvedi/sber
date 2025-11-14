@@ -1,8 +1,22 @@
 # Configuration for СберИндекс Anomaly Detection System
 
-# Detection profile (strict, normal, relaxed)
-# UPDATED: Switched to relaxed to reduce false positives (was: normal)
-detection_profile: "relaxed"
+# Detection profile (strict, normal, relaxed, custom_russia)
+# UPDATED: Switched to custom_russia profile optimized for Russia's geographic heterogeneity
+detection_profile: "custom_russia"
+
+# Detector management (enable/disable specific detectors)
+# BUGFIX: CrossSourceComparator disabled - no valid overlapping metrics between sources
+detectors:
+  statistical: 
+    enabled: true
+  temporal:
+    enabled: true
+  geographic:
+    enabled: true
+  cross_source:
+    enabled: false  # ❌ No comparable metrics between СберИндекс and Росстат
+  logical:
+    enabled: true
 
 # Пороги для детекции аномалий
 thresholds:
@@ -102,6 +116,32 @@ threshold_profiles:
     logical:
       check_negative_values: true
       check_impossible_ratios: true
+  
+  custom_russia:
+    statistical:
+      z_score: 5.0
+      iqr_multiplier: 3.0
+      percentile_lower: 0.1
+      percentile_upper: 99.9
+      use_robust_stats: true
+    
+    temporal:
+      spike_threshold: 200
+      drop_threshold: -80
+      volatility_multiplier: 3.0
+    
+    geographic:
+      regional_z_score: 6.0
+      cluster_threshold: 5.0
+      min_neighbors: 3
+    
+    cross_source:
+      correlation_threshold: 0.5
+      discrepancy_threshold: 50
+    
+    logical:
+      check_negative_values: true
+      check_impossible_ratios: false
 
 # Настройки экспорта
 export:
@@ -204,10 +244,13 @@ priority_weights:
     default: 1.0
 
 # Настройки автоматической настройки порогов (Auto-tuning)
-# UPDATED: Enabled auto-tuning to optimize thresholds and reduce false positives
+# BUGFIX: Auto-tuning disabled - no ground truth dataset available for validation
+# Without labeled data distinguishing true anomalies from false positives, auto-tuning
+# would optimize thresholds in the wrong direction, potentially increasing FPR instead
+# of reducing it. Manual threshold calibration via custom_russia profile is used instead.
 auto_tuning:
   # Enable/disable auto-tuning (opt-in, disabled by default)
-  enabled: true
+  enabled: false
   
   # Target false positive rate (0.0 - 1.0)
   # System will optimize thresholds to achieve this FPR

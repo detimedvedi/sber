@@ -175,6 +175,102 @@ class TestLoadSberindexData:
         assert data['market_access'] is None
 
 
+class TestLoadConnectionData:
+    """Test loading connection graph data"""
+    
+    def test_load_connection_data_success(self, temp_test_dir):
+        """Test loading connection graph successfully"""
+        # Create connection data with required columns
+        connection_data = pd.DataFrame({
+            'territory_id_x': [1001, 1001, 1002, 1002, 1003],
+            'territory_id_y': [1002, 1003, 1001, 1003, 1001],
+            'distance': [25.5, 45.2, 25.5, 30.8, 45.2],
+            'type': ['highway', 'highway', 'highway', 'highway', 'highway']
+        })
+        connection_data.to_parquet(temp_test_dir / 'connection.parquet')
+        
+        loader = DataLoader(str(temp_test_dir))
+        df = loader.load_connection_data()
+        
+        # Verify data loaded
+        assert df is not None
+        assert len(df) == 5
+        assert 'territory_id_x' in df.columns
+        assert 'territory_id_y' in df.columns
+        assert 'distance' in df.columns
+        assert 'type' in df.columns
+    
+    def test_load_connection_data_missing_file(self, temp_test_dir):
+        """Test loading connection graph when file doesn't exist"""
+        loader = DataLoader(str(temp_test_dir))
+        df = loader.load_connection_data()
+        
+        # Should return empty DataFrame
+        assert df is not None
+        assert len(df) == 0
+        assert isinstance(df, pd.DataFrame)
+    
+    def test_load_connection_data_missing_required_columns(self, temp_test_dir):
+        """Test loading connection graph with missing required columns"""
+        # Create connection data WITHOUT required columns
+        connection_data = pd.DataFrame({
+            'territory_id_x': [1001, 1002, 1003],
+            'territory_id_y': [1002, 1003, 1001],
+            # Missing 'distance' column
+            'type': ['highway', 'highway', 'highway']
+        })
+        connection_data.to_parquet(temp_test_dir / 'connection.parquet')
+        
+        loader = DataLoader(str(temp_test_dir))
+        df = loader.load_connection_data()
+        
+        # Should return empty DataFrame due to missing required column
+        assert df is not None
+        assert len(df) == 0
+    
+    def test_load_connection_data_without_type_column(self, temp_test_dir):
+        """Test loading connection graph without optional type column"""
+        # Create connection data with only required columns
+        connection_data = pd.DataFrame({
+            'territory_id_x': [1001, 1002, 1003],
+            'territory_id_y': [1002, 1003, 1001],
+            'distance': [25.5, 30.8, 45.2]
+        })
+        connection_data.to_parquet(temp_test_dir / 'connection.parquet')
+        
+        loader = DataLoader(str(temp_test_dir))
+        df = loader.load_connection_data()
+        
+        # Should load successfully even without type column
+        assert df is not None
+        assert len(df) == 3
+        assert 'territory_id_x' in df.columns
+        assert 'territory_id_y' in df.columns
+        assert 'distance' in df.columns
+    
+    def test_load_connection_data_statistics_logging(self, temp_test_dir):
+        """Test that connection statistics are logged correctly"""
+        # Create connection data with multiple territories
+        connection_data = pd.DataFrame({
+            'territory_id_x': [1001, 1001, 1002, 1002, 1003, 1004],
+            'territory_id_y': [1002, 1003, 1001, 1003, 1001, 1005],
+            'distance': [25.5, 45.2, 25.5, 30.8, 45.2, 50.0],
+            'type': ['highway', 'highway', 'highway', 'highway', 'highway', 'railway']
+        })
+        connection_data.to_parquet(temp_test_dir / 'connection.parquet')
+        
+        loader = DataLoader(str(temp_test_dir))
+        df = loader.load_connection_data()
+        
+        # Verify data loaded
+        assert df is not None
+        assert len(df) == 6
+        
+        # Verify unique territories (should be 5: 1001, 1002, 1003, 1004, 1005)
+        unique_territories = set(df['territory_id_x'].unique()) | set(df['territory_id_y'].unique())
+        assert len(unique_territories) == 5
+
+
 class TestLoadRosstatData:
     """Test loading Росстат data"""
     
@@ -475,6 +571,100 @@ class TestMergeDatasets:
         row_1001 = merged_df[merged_df['territory_id'] == 1001].iloc[0]
         assert row_1001['salary_manufacturing'] == 50000
         assert row_1001['salary_services'] == 45000
+    
+    def test_merge_consumption_with_temporal_structure(self, sample_municipal_dict):
+        """Test that consumption data with date column preserves temporal structure"""
+        loader = DataLoader()
+        
+        # Create consumption data with temporal structure (date column)
+        consumption_data = pd.DataFrame({
+            'territory_id': [1001, 1001, 1001, 1002, 1002, 1002],
+            'date': pd.to_datetime(['2023-01-01', '2023-02-01', '2023-03-01',
+                                   '2023-01-01', '2023-02-01', '2023-03-01']),
+            'category': ['продовольствие', 'продовольствие', 'продовольствие',
+                        'продовольствие', 'продовольствие', 'продовольствие'],
+            'value': [50.5, 55.0, 60.0, 60.3, 65.0, 70.0]
+        })
+        
+        sberindex = {
+            'connection': None,
+            'consumption': consumption_data,
+            'market_access': None
+        }
+        
+        rosstat = {
+            'population': None,
+            'migration': None,
+            'salary': None
+        }
+        
+        merged_df = loader.merge_datasets(
+            sberindex=sberindex,
+            rosstat=rosstat,
+            municipal=sample_municipal_dict
+        )
+        
+        # Verify temporal structure is preserved
+        assert 'date' in merged_df.columns, "Date column should be preserved"
+        assert 'consumption_продовольствие' in merged_df.columns
+        
+        # Verify we have multiple periods per territory (not aggregated)
+        territory_1001_records = merged_df[merged_df['territory_id'] == 1001]
+        assert len(territory_1001_records) == 3, "Should have 3 periods for territory 1001"
+        
+        # Verify values are preserved for each period
+        jan_record = territory_1001_records[territory_1001_records['date'] == '2023-01-01'].iloc[0]
+        feb_record = territory_1001_records[territory_1001_records['date'] == '2023-02-01'].iloc[0]
+        mar_record = territory_1001_records[territory_1001_records['date'] == '2023-03-01'].iloc[0]
+        
+        assert jan_record['consumption_продовольствие'] == 50.5
+        assert feb_record['consumption_продовольствие'] == 55.0
+        assert mar_record['consumption_продовольствие'] == 60.0
+        
+        # Verify municipal data is replicated for each period
+        assert jan_record['municipal_district_name_short'] == 'Москва'
+        assert feb_record['municipal_district_name_short'] == 'Москва'
+        assert mar_record['municipal_district_name_short'] == 'Москва'
+    
+    def test_merge_consumption_without_temporal_structure(self, sample_municipal_dict):
+        """Test that consumption data without date column is aggregated"""
+        loader = DataLoader()
+        
+        # Create consumption data WITHOUT temporal structure (no date column)
+        consumption_data = pd.DataFrame({
+            'territory_id': [1001, 1001, 1002, 1002],
+            'category': ['продовольствие', 'здоровье', 'продовольствие', 'здоровье'],
+            'value': [50.5, 30.2, 60.3, 35.1]
+        })
+        
+        sberindex = {
+            'connection': None,
+            'consumption': consumption_data,
+            'market_access': None
+        }
+        
+        rosstat = {
+            'population': None,
+            'migration': None,
+            'salary': None
+        }
+        
+        merged_df = loader.merge_datasets(
+            sberindex=sberindex,
+            rosstat=rosstat,
+            municipal=sample_municipal_dict
+        )
+        
+        # Verify NO date column (aggregated data)
+        assert 'date' not in merged_df.columns, "Date column should not exist for non-temporal data"
+        
+        # Verify we have one record per territory (aggregated)
+        assert len(merged_df[merged_df['territory_id'] == 1001]) == 1
+        assert len(merged_df[merged_df['territory_id'] == 1002]) == 1
+        
+        # Verify consumption columns exist
+        assert 'consumption_продовольствие' in merged_df.columns
+        assert 'consumption_здоровье' in merged_df.columns
 
 
 class TestValidateData:

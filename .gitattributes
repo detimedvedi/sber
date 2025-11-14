@@ -1,0 +1,43 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Python files - use LF line endings
+*.py text eol=lf
+*.pyi text eol=lf
+
+# Configuration files - use LF line endings
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.cfg text eol=lf
+*.ini text eol=lf
+
+# Shell scripts - use LF line endings
+*.sh text eol=lf
+
+# Windows scripts - use CRLF line endings
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files - mark as binary to prevent line ending conversion
+*.parquet binary
+*.xlsx binary
+*.xls binary
+*.gpkg binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.pyc binary
+*.pyd binary
+*.so binary
+*.dll binary
+*.exe binary

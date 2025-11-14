@@ -144,10 +144,14 @@ class LegitimatePatternFilter:
             anomaly_type: Type of anomalies to filter (default: logical_inconsistency)
             
         Returns:
-            DataFrame with legitimate patterns removed or flagged
+            DataFrame with legitimate patterns flagged via is_legitimate_pattern column
         """
         if anomalies_df.empty:
             return anomalies_df
+        
+        # Initialize is_legitimate_pattern column
+        anomalies_df['is_legitimate_pattern'] = False
+        anomalies_df['legitimate_pattern_category'] = None
         
         # Filter only specified anomaly type
         mask = anomalies_df['anomaly_type'] == anomaly_type
@@ -161,8 +165,9 @@ class LegitimatePatternFilter:
             )
             
             if pattern_info:
-                # Mark as legitimate pattern instead of removing
-                anomalies_df.at[idx, 'anomaly_type'] = 'legitimate_pattern'
+                # Mark as legitimate pattern with flag
+                anomalies_df.at[idx, 'is_legitimate_pattern'] = True
+                anomalies_df.at[idx, 'legitimate_pattern_category'] = pattern_info['category']
                 anomalies_df.at[idx, 'severity_score'] = 20.0  # Low severity
                 anomalies_df.at[idx, 'description'] = (
                     f"[LEGITIMATE PATTERN - {pattern_info['category']}] "

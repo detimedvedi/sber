@@ -1,25 +1,32 @@
 # Product Overview
 
-СберИндекс Anomaly Detection System - автоматическое обнаружение статистических аномалий в данных СберИндекса с использованием официальной статистики Росстата.
+СберИндекс Anomaly Detection System - a Python application for detecting statistical anomalies in municipal data from СберИндекс and Росстат (Russian Federal State Statistics Service).
 
 ## Purpose
 
-Python-приложение для комплексного анализа открытых данных СберИндекса с целью выявления необычных паттернов и отклонений в муниципальных данных. Система сравнивает показатели СберИндекса с официальной статистикой Росстата и генерирует структурированные отчеты.
+Competition entry for СберИндекс: "О этот странный, странный мир" (About this strange, strange world). The system identifies unusual patterns and outliers in Russian municipal data by comparing СберИндекс metrics with official Rosstat statistics.
 
 ## Core Capabilities
 
-- Statistical analysis: Z-score, IQR, and percentile-based outlier detection
-- Temporal analysis: Spike, drop, and volatility detection
-- Geographic analysis: Regional comparison with municipality type awareness
-- Cross-source comparison: СберИндекс vs Росстат data validation
-- Logical consistency checking: Data quality and contradiction detection
-- Auto-tuning: Automatic threshold optimization to minimize false positives
-- Configuration profiles: Pre-configured detection modes (strict/normal/relaxed)
+- **Statistical Analysis**: Detects outliers using z-score, IQR, and percentile methods
+- **Temporal Analysis**: Identifies spikes, drops, and volatility in time series data
+- **Geographic Analysis**: Finds municipalities that deviate from regional patterns using real territorial connection graphs
+- **Cross-Source Comparison**: Compares СберИндекс and Rosstat data (disabled by default due to methodology differences)
+- **Logical Consistency**: Detects contradictions and impossible values
+- **Automated Reporting**: Generates CSV, Excel, visualizations, and documentation
 
-## Output
+## Key Features
 
-- CSV and Excel reports with multiple sheets
-- Visualizations (PNG)
+- Robust statistics using median/MAD for outlier resistance
+- Municipality classification (capital/urban/rural) with adaptive thresholds
+- Configurable detection profiles (strict/normal/relaxed/custom_russia)
+- Temporal data preservation for trend analysis
+- Connection graph-based geographic analysis (4.7M territorial connections)
+- Legitimate pattern filtering (tourism, business districts, remote territories)
 - Executive summaries in Russian for management
-- Detailed methodology documentation
-- Priority-ranked anomalies with root cause analysis
+
+## Data Sources
+
+- **СберИндекс**: connection, consumption, market_access (Parquet)
+- **Росстат**: population, migration, salary (Parquet)
+- **Municipal Dictionary**: territory metadata (Excel)

@@ -340,8 +340,15 @@ class StatisticalOutlierDetector(BaseAnomalyDetector):
         
         anomalies = []
         
+        # Handle temporal data - use latest period for statistical analysis
+        if 'date' in df.columns:
+            self.logger.debug("Temporal data detected - using latest period for statistical analysis")
+            df_analysis = df.sort_values('date').groupby('territory_id').last().reset_index()
+        else:
+            df_analysis = df
+        
         # Get numeric columns (indicators)
-        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        numeric_cols = df_analysis.select_dtypes(include=[np.number]).columns.tolist()
         
         # Exclude ID columns
         exclude_cols = ['territory_id', 'oktmo']
@@ -349,11 +356,11 @@ class StatisticalOutlierDetector(BaseAnomalyDetector):
         
         for indicator in indicator_cols:
             # Skip if column has too many missing values
-            if df[indicator].isna().sum() / len(df) > 0.5:
+            if df_analysis[indicator].isna().sum() / len(df_analysis) > 0.5:
                 continue
             
             # Calculate z-scores maintaining original index
-            values = df[indicator].dropna()
+            values = df_analysis[indicator].dropna()
             if len(values) < 3:  # Need at least 3 values for meaningful statistics
                 continue
             
@@ -363,22 +370,42 @@ class StatisticalOutlierDetector(BaseAnomalyDetector):
             if std_val == 0:  # All values are the same
                 continue
             
-            # Calculate z-scores and maintain index alignment
-            z_scores_array = np.abs(stats.zscore(values))
-            z_scores_series = pd.Series(z_scores_array, index=values.index)
+            # Check skewness to detect highly skewed distributions
+            skewness = values.skew()
+            
+            if abs(skewness) > 2.0:
+                # Highly skewed distribution detected - apply log transformation
+                self.logger.debug(
+                    f"Applying log-transform to '{indicator}' (skewness={skewness:.2f})"
+                )
+                # Clip negative values to zero before transformation
+                values_clipped = values.clip(lower=0)
+                # Apply log(1+x) transformation
+                values_transformed = np.log1p(values_clipped)
+                # Calculate z-scores on transformed values
+                z_scores_array = np.abs(stats.zscore(values_transformed))
+                z_scores_series = pd.Series(z_scores_array, index=values.index)
+                # Update mean and std for transformed values (for reporting)
+                mean_val = values_transformed.mean()
+                std_val = values_transformed.std()
+            else:
+                # Normal distribution - use original values for z-score calculation
+                # Calculate z-scores and maintain index alignment
+                z_scores_array = np.abs(stats.zscore(values))
+                z_scores_series = pd.Series(z_scores_array, index=values.index)
             
             # Find outliers using boolean indexing
             outlier_mask = z_scores_series > threshold
             outlier_indices = z_scores_series[outlier_mask].index
             
             for idx in outlier_indices:
-                # Safe index access - check if index exists in original dataframe
-                if idx not in df.index:
+                # Safe index access - check if index exists in analysis dataframe
+                if idx not in df_analysis.index:
                     self.logger.warning(f"Index {idx} not found in dataframe, skipping")
                     continue
                 
                 # Use .loc[] for safe access
-                actual_value = df.loc[idx, indicator]
+                actual_value = df_analysis.loc[idx, indicator]
                 z_score = z_scores_series.loc[idx]
                 deviation = actual_value - mean_val
                 deviation_pct = (deviation / mean_val * 100) if mean_val != 0 else 0
@@ -392,9 +419,9 @@ class StatisticalOutlierDetector(BaseAnomalyDetector):
                 data_source = self.get_data_source(indicator)
                 
                 anomaly = self.create_anomaly_record(
-                    territory_id=df.loc[idx, 'territory_id'] if 'territory_id' in df.columns else idx,
-                    municipal_name=df.loc[idx, 'municipal_district_name_short'] if 'municipal_district_name_short' in df.columns else 'Unknown',
-                    region_name=df.loc[idx, 'region_name'] if 'region_name' in df.columns else 'Unknown',
+                    territory_id=df_analysis.loc[idx, 'territory_id'] if 'territory_id' in df_analysis.columns else idx,
+                    municipal_name=df_analysis.loc[idx, 'municipal_district_name_short'] if 'municipal_district_name_short' in df_analysis.columns else 'Unknown',
+                    region_name=df_analysis.loc[idx, 'region_name'] if 'region_name' in df_analysis.columns else 'Unknown',
                     indicator=indicator,
                     anomaly_type='statistical_outlier',
                     actual_value=float(actual_value),
@@ -432,8 +459,15 @@ class StatisticalOutlierDetector(BaseAnomalyDetector):
         
         anomalies = []
         
+        # Handle temporal data - use latest period for statistical analysis
+        if 'date' in df.columns:
+            self.logger.debug("Temporal data detected - using latest period for IQR analysis")
+            df_analysis = df.sort_values('date').groupby('territory_id').last().reset_index()
+        else:
+            df_analysis = df
+        
         # Get numeric columns (indicators)
-        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        numeric_cols = df_analysis.select_dtypes(include=[np.number]).columns.tolist()
         
         # Exclude ID columns
         exclude_cols = ['territory_id', 'oktmo']
@@ -441,11 +475,11 @@ class StatisticalOutlierDetector(BaseAnomalyDetector):
         
         for indicator in indicator_cols:
             # Skip if column has too many missing values
-            if df[indicator].isna().sum() / len(df) > 0.5:
+            if df_analysis[indicator].isna().sum() / len(df_analysis) > 0.5:
                 continue
             
             # Maintain original indices when working with subsets
-            values = df[indicator].dropna()
+            values = df_analysis[indicator].dropna()
             if len(values) < 3:
                 continue
             
@@ -466,13 +500,13 @@ class StatisticalOutlierDetector(BaseAnomalyDetector):
             outlier_indices = values[outlier_mask].index
             
             for idx in outlier_indices:
-                # Safe index access - check if index exists in original dataframe
-                if idx not in df.index:
+                # Safe index access - check if index exists in analysis dataframe
+                if idx not in df_analysis.index:
                     self.logger.warning(f"Index {idx} not found in dataframe, skipping")
                     continue
                 
                 # Use .loc[] for safe access
-                actual_value = df.loc[idx, indicator]
+                actual_value = df_analysis.loc[idx, indicator]
                 median_val = values.median()
                 
                 # Calculate deviation from nearest bound
@@ -497,9 +531,9 @@ class StatisticalOutlierDetector(BaseAnomalyDetector):
                 data_source = self.get_data_source(indicator)
                 
                 anomaly = self.create_anomaly_record(
-                    territory_id=df.loc[idx, 'territory_id'] if 'territory_id' in df.columns else idx,
-                    municipal_name=df.loc[idx, 'municipal_district_name_short'] if 'municipal_district_name_short' in df.columns else 'Unknown',
-                    region_name=df.loc[idx, 'region_name'] if 'region_name' in df.columns else 'Unknown',
+                    territory_id=df_analysis.loc[idx, 'territory_id'] if 'territory_id' in df_analysis.columns else idx,
+                    municipal_name=df_analysis.loc[idx, 'municipal_district_name_short'] if 'municipal_district_name_short' in df_analysis.columns else 'Unknown',
+                    region_name=df_analysis.loc[idx, 'region_name'] if 'region_name' in df_analysis.columns else 'Unknown',
                     indicator=indicator,
                     anomaly_type='statistical_outlier',
                     actual_value=float(actual_value),
@@ -544,8 +578,15 @@ class StatisticalOutlierDetector(BaseAnomalyDetector):
         
         anomalies = []
         
+        # Handle temporal data - use latest period for statistical analysis
+        if 'date' in df.columns:
+            self.logger.debug("Temporal data detected - using latest period for percentile analysis")
+            df_analysis = df.sort_values('date').groupby('territory_id').last().reset_index()
+        else:
+            df_analysis = df
+        
         # Get numeric columns (indicators)
-        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        numeric_cols = df_analysis.select_dtypes(include=[np.number]).columns.tolist()
         
         # Exclude ID columns
         exclude_cols = ['territory_id', 'oktmo']
@@ -553,11 +594,11 @@ class StatisticalOutlierDetector(BaseAnomalyDetector):
         
         for indicator in indicator_cols:
             # Skip if column has too many missing values
-            if df[indicator].isna().sum() / len(df) > 0.5:
+            if df_analysis[indicator].isna().sum() / len(df_analysis) > 0.5:
                 continue
             
             # Maintain original indices when working with subsets
-            values = df[indicator].dropna()
+            values = df_analysis[indicator].dropna()
             if len(values) < 10:  # Need sufficient data for percentile analysis
                 continue
             
@@ -571,13 +612,13 @@ class StatisticalOutlierDetector(BaseAnomalyDetector):
             outlier_indices = values[outlier_mask].index
             
             for idx in outlier_indices:
-                # Safe index access - check if index exists in original dataframe
-                if idx not in df.index:
+                # Safe index access - check if index exists in analysis dataframe
+                if idx not in df_analysis.index:
                     self.logger.warning(f"Index {idx} not found in dataframe, skipping")
                     continue
                 
                 # Use .loc[] for safe access
-                actual_value = df.loc[idx, indicator]
+                actual_value = df_analysis.loc[idx, indicator]
                 percentile = stats.percentileofscore(values, actual_value)
                 
                 # Determine if it's a high or low outlier
@@ -600,9 +641,9 @@ class StatisticalOutlierDetector(BaseAnomalyDetector):
                 data_source = self.get_data_source(indicator)
                 
                 anomaly = self.create_anomaly_record(
-                    territory_id=df.loc[idx, 'territory_id'] if 'territory_id' in df.columns else idx,
-                    municipal_name=df.loc[idx, 'municipal_district_name_short'] if 'municipal_district_name_short' in df.columns else 'Unknown',
-                    region_name=df.loc[idx, 'region_name'] if 'region_name' in df.columns else 'Unknown',
+                    territory_id=df_analysis.loc[idx, 'territory_id'] if 'territory_id' in df_analysis.columns else idx,
+                    municipal_name=df_analysis.loc[idx, 'municipal_district_name_short'] if 'municipal_district_name_short' in df_analysis.columns else 'Unknown',
+                    region_name=df_analysis.loc[idx, 'region_name'] if 'region_name' in df_analysis.columns else 'Unknown',
                     indicator=indicator,
                     anomaly_type='statistical_outlier',
                     actual_value=float(actual_value),
@@ -1614,12 +1655,13 @@ class GeographicAnomalyDetector(BaseAnomalyDetector):
         self.regional_z_score_threshold = config.get('thresholds', {}).get('geographic', {}).get('regional_z_score', 2.0)
         self.cluster_threshold = config.get('thresholds', {}).get('geographic', {}).get('cluster_threshold', 2.5)
     
-    def detect(self, df: pd.DataFrame) -> pd.DataFrame:
+    def detect(self, df: pd.DataFrame, connections: pd.DataFrame = None) -> pd.DataFrame:
         """
         Detect geographic anomalies in the dataset.
         
         Args:
             df: DataFrame containing municipal data with geographic information
+            connections: Optional connection graph DataFrame for neighbor-based analysis
             
         Returns:
             DataFrame with detected anomalies
@@ -1638,8 +1680,8 @@ class GeographicAnomalyDetector(BaseAnomalyDetector):
         all_anomalies.extend(regional_anomalies)
         self.logger.info(f"Detected {len(regional_anomalies)} regional outliers")
         
-        # Detect cluster outliers
-        cluster_anomalies = self.detect_cluster_outliers(df)
+        # Detect cluster outliers (using connection graph if available)
+        cluster_anomalies = self.detect_cluster_outliers(df, connections=connections)
         all_anomalies.extend(cluster_anomalies)
         self.logger.info(f"Detected {len(cluster_anomalies)} cluster outliers")
         
@@ -1959,18 +2001,224 @@ class GeographicAnomalyDetector(BaseAnomalyDetector):
         
         return anomalies
     
-    def detect_cluster_outliers(self, df: pd.DataFrame) -> List[Dict[str, Any]]:
+    def _get_neighbors(
+        self, 
+        territory_id: int, 
+        connections: pd.DataFrame, 
+        max_distance: float = 50.0
+    ) -> List[int]:
+        """
+        Get neighboring territories from real connection graph.
+        
+        Args:
+            territory_id: Territory ID to find neighbors for
+            connections: Connection graph DataFrame with columns territory_id_x, territory_id_y, distance
+            max_distance: Maximum distance in km to consider as neighbor (default 50km)
+        
+        Returns:
+            List of neighbor territory IDs
+        """
+        if connections.empty:
+            return []
+        
+        # Find all connections involving this territory
+        neighbors_x = connections[
+            (connections['territory_id_x'] == territory_id) &
+            (connections['distance'] <= max_distance)
+        ]['territory_id_y'].tolist()
+        
+        neighbors_y = connections[
+            (connections['territory_id_y'] == territory_id) &
+            (connections['distance'] <= max_distance)
+        ]['territory_id_x'].tolist()
+        
+        # Combine and deduplicate
+        all_neighbors = list(set(neighbors_x + neighbors_y))
+        
+        self.logger.debug(f"Territory {territory_id}: {len(all_neighbors)} neighbors within {max_distance}km")
+        
+        return all_neighbors
+    
+    def detect_cluster_outliers(self, df: pd.DataFrame, connections: pd.DataFrame = None) -> List[Dict[str, Any]]:
         """
         Detect municipalities that differ from their neighbors.
         
-        Identifies municipalities within a region that form clusters of similar
-        values, then finds outliers that don't fit any cluster pattern.
-        
-        Uses robust statistics (median/MAD) instead of mean/std to be resistant
-        to outliers when defining cluster boundaries.
+        UPDATED: Now uses real connection graph to determine neighbors instead of 
+        administrative regions. Falls back to region-based analysis if no connection graph.
         
         Args:
             df: DataFrame containing municipal data with region information
+            connections: Optional connection graph DataFrame (territory_id_x, territory_id_y, distance)
+            
+        Returns:
+            List of anomaly records
+        """
+        anomalies = []
+        
+        # Handle temporal data - use latest period for geographic analysis
+        if 'date' in df.columns:
+            self.logger.info("Temporal data detected, using latest period for geographic analysis")
+            df_latest = df.sort_values('date').groupby('territory_id').last().reset_index()
+        else:
+            df_latest = df
+        
+        # Check if connection graph is available
+        use_graph = connections is not None and not connections.empty
+        
+        if use_graph:
+            self.logger.info("Using connection graph for neighbor-based cluster analysis")
+            return self._detect_cluster_outliers_graph_based(df_latest, connections)
+        else:
+            self.logger.warning("No connection graph - falling back to region-based clustering")
+            return self._detect_cluster_outliers_region_based(df_latest)
+    
+    def _detect_cluster_outliers_graph_based(self, df: pd.DataFrame, connections: pd.DataFrame) -> List[Dict[str, Any]]:
+        """
+        Graph-based cluster outlier detection using real connection graph.
+        Compares each territory to its actual geographic neighbors.
+        
+        Args:
+            df: DataFrame containing municipal data
+            connections: Connection graph DataFrame
+            
+        Returns:
+            List of anomaly records
+        """
+        anomalies = []
+        
+        # Get numeric columns (indicators)
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        exclude_cols = ['territory_id', 'oktmo']
+        indicator_cols = [col for col in numeric_cols if col not in exclude_cols]
+        
+        # Get max_distance from config or use default
+        max_distance = self.config.get('thresholds', {}).get('geographic', {}).get('max_neighbor_distance_km', 50.0)
+        
+        # Analyze each territory
+        for idx, row in df.iterrows():
+            territory_id = row['territory_id']
+            
+            # Get neighbors from connection graph
+            neighbors = self._get_neighbors(territory_id, connections, max_distance)
+            
+            if len(neighbors) < 3:  # Need at least 3 neighbors for meaningful comparison
+                continue
+            
+            # Get neighbor data
+            neighbor_data = df[df['territory_id'].isin(neighbors)]
+            
+            if len(neighbor_data) == 0:
+                continue
+            
+            # Compare this territory to its neighbors for each indicator
+            for indicator in indicator_cols:
+                # Skip if missing in this territory
+                if pd.isna(row[indicator]):
+                    continue
+                
+                # Skip if too many neighbors are missing this indicator
+                neighbor_values = neighbor_data[indicator].dropna()
+                if len(neighbor_values) < 2:  # Need at least 2 neighbors with data
+                    continue
+                
+                actual_value = row[indicator]
+                
+                # Calculate robust statistics from neighbors
+                neighbor_median = neighbor_values.median()
+                neighbor_mad = np.median(np.abs(neighbor_values - neighbor_median))
+                
+                if neighbor_mad == 0:  # No variation among neighbors
+                    # Check if this territory differs from uniform neighbors
+                    if abs(actual_value - neighbor_median) > 0.01 * abs(neighbor_median):
+                        # Territory differs from uniform neighbors
+                        deviation = actual_value - neighbor_median
+                        deviation_pct = (deviation / neighbor_median * 100) if neighbor_median != 0 else 0
+                        
+                        severity_score = min(abs(deviation_pct), 100.0)
+                        
+                        data_source = self.get_data_source(indicator)
+                        region_name = row.get('region_name', 'Unknown')
+                        municipal_name = row.get('municipal_district_name_short', 'Unknown')
+                        
+                        description = f"{indicator} value {actual_value:.2f} differs from uniform neighbors (all ~{neighbor_median:.2f}) within {max_distance}km"
+                        
+                        anomaly = self.create_anomaly_record(
+                            territory_id=territory_id,
+                            municipal_name=municipal_name,
+                            region_name=region_name,
+                            indicator=indicator,
+                            anomaly_type='geographic_anomaly',
+                            actual_value=float(actual_value),
+                            expected_value=float(neighbor_median),
+                            deviation=float(deviation),
+                            deviation_pct=float(deviation_pct),
+                            severity_score=severity_score,
+                            z_score=0.0,
+                            data_source=data_source,
+                            detection_method='neighbor_outlier_graph',
+                            description=description,
+                            potential_explanation=f"Territory differs from {len(neighbors)} geographic neighbors - may indicate unique local characteristics"
+                        )
+                        anomalies.append(anomaly)
+                    continue
+                
+                # Calculate robust z-score vs neighbors
+                robust_z_score = (actual_value - neighbor_median) / (1.4826 * neighbor_mad)
+                
+                # Flag if outside cluster bounds
+                if abs(robust_z_score) > self.cluster_threshold:
+                    deviation = actual_value - neighbor_median
+                    deviation_pct = (deviation / neighbor_median * 100) if neighbor_median != 0 else 0
+                    
+                    # Calculate severity
+                    base_severity = self.calculate_severity_score(
+                        deviation=deviation,
+                        z_score=robust_z_score
+                    )
+                    
+                    # Higher confidence for graph-based neighbor comparison
+                    severity_score = min(base_severity * 1.2, 100.0)
+                    
+                    data_source = self.get_data_source(indicator)
+                    region_name = row.get('region_name', 'Unknown')
+                    municipal_name = row.get('municipal_district_name_short', 'Unknown')
+                    
+                    cluster_bounds = [
+                        neighbor_median - self.cluster_threshold * 1.4826 * neighbor_mad,
+                        neighbor_median + self.cluster_threshold * 1.4826 * neighbor_mad
+                    ]
+                    
+                    description = f"{indicator} value {actual_value:.2f} is outside neighbor cluster [{cluster_bounds[0]:.2f}, {cluster_bounds[1]:.2f}] (median: {neighbor_median:.2f}, {len(neighbors)} neighbors within {max_distance}km)"
+                    
+                    anomaly = self.create_anomaly_record(
+                        territory_id=territory_id,
+                        municipal_name=municipal_name,
+                        region_name=region_name,
+                        indicator=indicator,
+                        anomaly_type='geographic_anomaly',
+                        actual_value=float(actual_value),
+                        expected_value=float(neighbor_median),
+                        deviation=float(deviation),
+                        deviation_pct=float(deviation_pct),
+                        severity_score=severity_score,
+                        z_score=float(robust_z_score),
+                        data_source=data_source,
+                        detection_method='neighbor_outlier_graph',
+                        description=description,
+                        potential_explanation=f"Territory significantly differs from {len(neighbors)} geographic neighbors - real anomaly or measurement error"
+                    )
+                    
+                    anomalies.append(anomaly)
+        
+        return anomalies
+    
+    def _detect_cluster_outliers_region_based(self, df: pd.DataFrame) -> List[Dict[str, Any]]:
+        """
+        Legacy fallback: Region-based cluster outlier detection.
+        Used when connection graph is not available.
+        
+        Args:
+            df: DataFrame containing municipal data
             
         Returns:
             List of anomaly records
@@ -2310,16 +2558,18 @@ class LogicalConsistencyChecker(BaseAnomalyDetector):
     4. Duplicate or inconsistent municipality identifiers
     """
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], is_temporal: bool = False):
         """
         Initialize the logical consistency checker.
         
         Args:
             config: Configuration dictionary containing logical check settings
+            is_temporal: Whether the dataset contains temporal data (multiple periods per territory)
         """
         super().__init__(config)
         self.check_negative_values = config.get('thresholds', {}).get('logical', {}).get('check_negative_values', True)
         self.check_impossible_ratios = config.get('thresholds', {}).get('logical', {}).get('check_impossible_ratios', True)
+        self.is_temporal = is_temporal  # BUGFIX: Track if data is temporal to skip duplicate checks
         
         # Get threshold for flagging municipalities with high missing indicators
         self.high_missing_municipality_threshold = config.get('missing_value_handling', {}).get('municipality_threshold', 70.0)
@@ -2405,6 +2655,10 @@ class LogicalConsistencyChecker(BaseAnomalyDetector):
             DataFrame with detected anomalies
         """
         self.logger.info("Starting logical consistency checking")
+        
+        # BUGFIX: Log temporal data status
+        if self.is_temporal:
+            self.logger.info("Temporal data detected - skipping duplicate territory_id checks (multiple periods per territory is expected)")
         
         all_anomalies = []
         
@@ -2920,7 +3174,8 @@ class LogicalConsistencyChecker(BaseAnomalyDetector):
         anomalies = []
         
         # Check 1: Duplicate territory_ids
-        if 'territory_id' in df.columns:
+        # BUGFIX: Skip duplicate check if data is temporal (multiple periods per territory is expected)
+        if 'territory_id' in df.columns and not self.is_temporal:
             duplicate_ids = df[df.duplicated(subset=['territory_id'], keep=False)]['territory_id'].unique()
             
             for territory_id in duplicate_ids:

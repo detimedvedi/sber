@@ -350,16 +350,18 @@ class DetectorManager:
     prevent execution of others.
     """
     
-    def __init__(self, config: Dict[str, Any], source_mapping: Optional[Dict[str, str]] = None):
+    def __init__(self, config: Dict[str, Any], source_mapping: Optional[Dict[str, str]] = None, is_temporal: bool = False):
         """
         Initialize detector manager with configuration.
         
         Args:
             config: Configuration dictionary containing thresholds and settings
             source_mapping: Optional dictionary mapping column names to data sources
+            is_temporal: Whether the dataset contains temporal data (multiple periods per territory)
         """
         self.config = config
         self.source_mapping = source_mapping or {}
+        self.is_temporal = is_temporal  # BUGFIX: Track temporal data status
         self.threshold_manager = ThresholdManager(config)
         self.logger = logging.getLogger(f"{__name__}.DetectorManager")
         
@@ -404,7 +406,9 @@ class DetectorManager:
     
     def _initialize_detectors(self) -> Dict[str, Any]:
         """
-        Initialize all detector instances.
+        Initialize detector instances based on config.detectors.enabled flags.
+        
+        BUGFIX: Now respects config.detectors section for conditional loading.
         
         Returns:
             Dictionary mapping detector names to detector instances
@@ -418,58 +422,83 @@ class DetectorManager:
         )
         
         detectors = {}
+        detector_config = self.config.get('detectors', {})
         
-        try:
-            detector = StatisticalOutlierDetector(self.config)
-            detector.source_mapping = self.source_mapping
-            detectors['statistical'] = detector
-            self.logger.debug("Initialized StatisticalOutlierDetector")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize StatisticalOutlierDetector: {e}")
+        # Statistical Outlier Detector
+        if detector_config.get('statistical', {}).get('enabled', True):
+            try:
+                detector = StatisticalOutlierDetector(self.config)
+                detector.source_mapping = self.source_mapping
+                detectors['statistical'] = detector
+                self.logger.debug("✓ Initialized StatisticalOutlierDetector")
+            except Exception as e:
+                self.logger.error(f"Failed to initialize StatisticalOutlierDetector: {e}")
+        else:
+            self.logger.info("✗ StatisticalOutlierDetector disabled in config")
         
-        try:
-            detector = CrossSourceComparator(self.config)
-            detector.source_mapping = self.source_mapping
-            detectors['cross_source'] = detector
-            self.logger.debug("Initialized CrossSourceComparator")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize CrossSourceComparator: {e}")
+        # Temporal Anomaly Detector
+        if detector_config.get('temporal', {}).get('enabled', True):
+            try:
+                detector = TemporalAnomalyDetector(self.config)
+                detector.source_mapping = self.source_mapping
+                detectors['temporal'] = detector
+                self.logger.debug("✓ Initialized TemporalAnomalyDetector")
+            except Exception as e:
+                self.logger.error(f"Failed to initialize TemporalAnomalyDetector: {e}")
+        else:
+            self.logger.info("✗ TemporalAnomalyDetector disabled in config")
         
-        try:
-            detector = TemporalAnomalyDetector(self.config)
-            detector.source_mapping = self.source_mapping
-            detectors['temporal'] = detector
-            self.logger.debug("Initialized TemporalAnomalyDetector")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize TemporalAnomalyDetector: {e}")
+        # Geographic Anomaly Detector
+        if detector_config.get('geographic', {}).get('enabled', True):
+            try:
+                detector = GeographicAnomalyDetector(self.config)
+                detector.source_mapping = self.source_mapping
+                detectors['geographic'] = detector
+                self.logger.debug("✓ Initialized GeographicAnomalyDetector")
+            except Exception as e:
+                self.logger.error(f"Failed to initialize GeographicAnomalyDetector: {e}")
+        else:
+            self.logger.info("✗ GeographicAnomalyDetector disabled in config")
         
-        try:
-            detector = GeographicAnomalyDetector(self.config)
-            detector.source_mapping = self.source_mapping
-            detectors['geographic'] = detector
-            self.logger.debug("Initialized GeographicAnomalyDetector")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize GeographicAnomalyDetector: {e}")
+        # Cross-Source Comparator (DISABLED by default - no valid metric pairs)
+        if detector_config.get('cross_source', {}).get('enabled', False):
+            try:
+                detector = CrossSourceComparator(self.config)
+                detector.source_mapping = self.source_mapping
+                detectors['cross_source'] = detector
+                self.logger.warning("⚠ CrossSourceComparator enabled - verify metric pairs are valid")
+            except Exception as e:
+                self.logger.error(f"Failed to initialize CrossSourceComparator: {e}")
+        else:
+            self.logger.info("✗ CrossSourceComparator disabled (no valid overlapping metrics)")
         
-        try:
-            detector = LogicalConsistencyChecker(self.config)
-            detector.source_mapping = self.source_mapping
-            detectors['logical'] = detector
-            self.logger.debug("Initialized LogicalConsistencyChecker")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize LogicalConsistencyChecker: {e}")
+        # Logical Consistency Checker
+        if detector_config.get('logical', {}).get('enabled', True):
+            try:
+                # BUGFIX: Pass is_temporal flag to skip duplicate checks for temporal data
+                detector = LogicalConsistencyChecker(self.config, is_temporal=self.is_temporal)
+                detector.source_mapping = self.source_mapping
+                detectors['logical'] = detector
+                self.logger.debug("✓ Initialized LogicalConsistencyChecker")
+            except Exception as e:
+                self.logger.error(f"Failed to initialize LogicalConsistencyChecker: {e}")
+        else:
+            self.logger.info("✗ LogicalConsistencyChecker disabled in config")
         
         return detectors
     
-    def run_all_detectors(self, df: pd.DataFrame) -> List[pd.DataFrame]:
+    def run_all_detectors(self, df: pd.DataFrame, connections: pd.DataFrame = None) -> List[pd.DataFrame]:
         """
         Run all detectors with error handling.
+        
+        BUGFIX: Now accepts connections parameter for GeographicAnomalyDetector.
         
         Each detector runs independently. If one fails, others continue.
         Statistics are tracked for each detector execution.
         
         Args:
             df: DataFrame containing municipal data
+            connections: Optional connection graph DataFrame for geographic analysis
             
         Returns:
             List of DataFrames containing anomalies from each detector
@@ -477,13 +506,15 @@ class DetectorManager:
         self.logger.info("=" * 80)
         self.logger.info("Starting detector execution")
         self.logger.info(f"Input data shape: {df.shape}")
+        if connections is not None and not connections.empty:
+            self.logger.info(f"Connection graph: {len(connections):,} connections")
         self.logger.info("=" * 80)
         
         results = []
         self.detector_stats = []  # Reset statistics
         
         for detector_name, detector in self.detectors.items():
-            anomalies_df = self.run_detector_safe(detector_name, detector, df)
+            anomalies_df = self.run_detector_safe(detector_name, detector, df, connections)
             
             if anomalies_df is not None and len(anomalies_df) > 0:
                 results.append(anomalies_df)
@@ -497,15 +528,19 @@ class DetectorManager:
         self, 
         detector_name: str, 
         detector: Any, 
-        df: pd.DataFrame
+        df: pd.DataFrame,
+        connections: pd.DataFrame = None
     ) -> Optional[pd.DataFrame]:
         """
         Run a single detector with try-catch error handling.
+        
+        BUGFIX: Now passes connections to geographic detector.
         
         Args:
             detector_name: Name of the detector for logging
             detector: Detector instance to run
             df: DataFrame containing municipal data
+            connections: Optional connection graph for geographic analysis
             
         Returns:
             DataFrame with detected anomalies, or None if detector failed
@@ -515,8 +550,11 @@ class DetectorManager:
         self.logger.info(f"Running {detector_name} detector...")
         
         try:
-            # Run the detector
-            anomalies = detector.detect(df)
+            # Run the detector - pass connections for geographic detector
+            if detector_name == 'geographic' and connections is not None:
+                anomalies = detector.detect(df, connections=connections)
+            else:
+                anomalies = detector.detect(df)
             
             # Calculate execution time
             end_time = datetime.now()

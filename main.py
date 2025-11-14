@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 import yaml
+import pandas as pd
 
 from src.config_validator import validate_config
 
@@ -344,6 +345,36 @@ def main():
             municipal_dict = None
             print(f"  ⚠ Warning: Could not load municipal dictionary - {e}")
         
+        # BUGFIX: Load connection graph explicitly for GeographicAnomalyDetector
+        try:
+            connections = data_loader.load_connection_data()
+            pipeline_stats['data_loaded']['connections'] = len(connections) if not connections.empty else 0
+            if not connections.empty:
+                logger.info(
+                    "Connection graph loaded",
+                    extra={
+                        'data_source': 'connection_graph',
+                        'connections_count': len(connections)
+                    }
+                )
+                print(f"  ✓ Connection graph loaded: {len(connections):,} connections")
+            else:
+                logger.warning("Connection graph is empty - geographic analysis will use fallback")
+                print(f"  ⚠ Warning: Connection graph is empty")
+        except Exception as e:
+            logger.error(
+                "Error loading connection graph",
+                exc_info=True,
+                extra={
+                    'data_source': 'connection_graph',
+                    'error_type': type(e).__name__,
+                    'error_message': str(e)
+                }
+            )
+            pipeline_stats['warnings'].append(f"Connection graph loading failed: {e}")
+            connections = pd.DataFrame()
+            print(f"  ⚠ Warning: Could not load connection graph - {e}")
+        
         # Check if we have enough data to continue
         if not sberindex_data and not rosstat_data:
             logger.critical(
@@ -634,11 +665,16 @@ def main():
             logger.info("Auto-tuning is disabled - using configured thresholds")
             print("  → Auto-tuning disabled: Using configured thresholds")
         
-        # Initialize DetectorManager with source mapping (and potentially tuned thresholds)
-        detector_manager = DetectorManager(config, source_mapping)
+        # Initialize DetectorManager with source mapping and temporal data status
+        # BUGFIX: Pass is_temporal flag to skip duplicate checks for temporal data
+        detector_manager = DetectorManager(
+            config, 
+            source_mapping, 
+            is_temporal=duplicate_report.is_temporal
+        )
         
-        # Run all detectors through the manager
-        all_anomalies = detector_manager.run_all_detectors(unified_df)
+        # Run all detectors through the manager (BUGFIX: pass connections for geographic analysis)
+        all_anomalies = detector_manager.run_all_detectors(unified_df, connections=connections)
         
         # Get detector statistics for reporting
         detector_stats = detector_manager.get_detector_statistics()
@@ -763,6 +799,62 @@ def main():
             # Create empty dataframe to continue
             import pandas as pd
             combined_anomalies = pd.DataFrame()
+        
+        # BUGFIX: Apply legitimate pattern filter after aggregation
+        if len(combined_anomalies) > 0:
+            try:
+                from src.legitimate_pattern_filter import LegitimatePatternFilter
+                
+                logger.info("Applying legitimate pattern filter...")
+                print("  → Applying legitimate pattern filter...")
+                pattern_filter = LegitimatePatternFilter()
+                
+                # Filter anomalies
+                filtered_df = pattern_filter.filter_anomalies(combined_anomalies)
+                
+                # Count reclassified
+                legitimate_count = (filtered_df['is_legitimate_pattern'] == True).sum()
+                logger.info(
+                    f"Reclassified {legitimate_count} anomalies as legitimate patterns",
+                    extra={
+                        'legitimate_count': legitimate_count,
+                        'step': 'aggregation',
+                        'operation': 'legitimate_pattern_filter'
+                    }
+                )
+                print(f"    ✓ Reclassified {legitimate_count} anomalies as legitimate patterns")
+                
+                # Remove legitimate patterns
+                combined_anomalies = filtered_df[
+                    filtered_df['is_legitimate_pattern'] == False
+                ].copy()
+                
+                logger.info(
+                    f"After filtering: {len(combined_anomalies)} anomalies remain",
+                    extra={
+                        'remaining_anomalies': len(combined_anomalies),
+                        'step': 'aggregation',
+                        'operation': 'legitimate_pattern_filter'
+                    }
+                )
+                print(f"    ✓ After filtering: {len(combined_anomalies)} anomalies remain")
+                
+            except ImportError:
+                logger.warning("LegitimatePatternFilter not found - skipping pattern filtering")
+                print(f"  ⚠ Warning: LegitimatePatternFilter not found - skipping")
+            except Exception as e:
+                logger.warning(
+                    f"Failed to apply pattern filter: {e}",
+                    exc_info=True,
+                    extra={
+                        'error_type': type(e).__name__,
+                        'error_message': str(e),
+                        'step': 'aggregation',
+                        'operation': 'legitimate_pattern_filter'
+                    }
+                )
+                print(f"  ⚠ Warning: Failed to apply pattern filter - {e}")
+                pipeline_stats['warnings'].append(f"Pattern filter failed: {e}")
         
         if len(combined_anomalies) > 0:
             try:

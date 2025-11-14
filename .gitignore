@@ -166,11 +166,11 @@ $RECYCLE.BIN/
 *.backup
 *~
 
-# Temporary documentation (project-specific)
-AUDIT_SUMMARY.md
-CHANGES_APPLIED.md
-PROJECT_READINESS_ASSESSMENT.md
-RESULTS_ASSESSMENT.md
+# Temporary documentation (project-specific) - archived
+docs/archive/
+
+# Quick start guide (merged into README)
+QUICK_START.md
 
 # ============================================
 # SECURITY AND CREDENTIALS
