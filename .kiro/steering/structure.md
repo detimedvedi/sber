@@ -1,123 +1,133 @@
 # Project Structure
 
-## Directory Layout
+## Root Directory
 
 ```
-sberindex-anomaly-detection/
-├── src/                    # Core application code
-├── tests/                  # Test suite
-├── examples/               # Usage examples and demos
-├── docs/                   # Documentation and implementation summaries
-├── output/                 # Generated results (auto-created)
-├── rosstat/                # Rosstat data files (Parquet)
-├── t_dict_municipal/       # Municipal dictionary (Excel, GeoPackage)
-├── config.yaml             # Main configuration
-├── main.py                 # Entry point
-└── requirements.txt        # Dependencies
+├── main.py                              # Main entry point - orchestrates full pipeline
+├── analyze_anomalies.py                 # Post-analysis script for result exploration
+├── run_and_compare.py                   # Configuration comparison utility
+├── config.yaml                          # Main configuration file
+├── legitimate_patterns_config.yaml      # Optional legitimate pattern filters
+├── requirements.txt                     # Python dependencies
+├── README.md                            # Project documentation
+├── DATA_GUIDE.md                        # Data acquisition and format guide
+├── data_structure_summary.md            # Data structure documentation
 ```
 
-## Source Code Organization (`src/`)
+## Source Code (`src/`)
 
-### Core Modules
+Core modules implementing the anomaly detection system:
 
-- **data_loader.py** - Loads and merges data from all sources (СберИндекс, Росстат, municipal dict)
-- **anomaly_detector.py** - Base detector class and all detector implementations
-- **detector_manager.py** - Orchestrates detector execution with error handling
-- **data_preprocessor.py** - Data preprocessing and municipality classification
-- **results_aggregator.py** - Aggregates and ranks anomaly results
-- **exporter.py** - Exports results to CSV, Excel, visualizations
-- **auto_tuner.py** - Automatic threshold optimization
-- **config_validator.py** - Configuration validation
-- **error_handler.py** - Centralized error handling
-- **legitimate_pattern_filter.py** - Filters known legitimate patterns
+```
+src/
+├── __init__.py
+├── data_loader.py              # Data loading and merging (СберИндекс, Rosstat, municipal dict)
+├── data_preprocessor.py        # Data preprocessing and municipality classification
+├── anomaly_detector.py         # Base detector class + all detector implementations
+├── detector_manager.py         # Detector orchestration with error handling
+├── results_aggregator.py       # Anomaly aggregation and ranking
+├── exporter.py                 # Result export (CSV, Excel, visualizations, docs)
+├── auto_tuner.py               # Automatic threshold optimization
+├── config_validator.py         # Configuration validation
+├── error_handler.py            # Centralized error handling
+└── legitimate_pattern_filter.py # Filter for known legitimate patterns
+```
 
-### Detector Classes (in anomaly_detector.py)
+### Key Module Responsibilities
 
-- **BaseAnomalyDetector** - Abstract base class for all detectors
-- **StatisticalOutlierDetector** - Z-score, IQR, percentile methods
-- **TemporalAnomalyDetector** - Spikes, drops, volatility detection
-- **GeographicAnomalyDetector** - Regional and connection-based analysis
-- **CrossSourceComparator** - Compares СберИндекс vs Rosstat (disabled by default)
-- **LogicalConsistencyChecker** - Validates data consistency
+- **data_loader.py**: Loads parquet/Excel files, merges datasets by territory_id, detects temporal structure, handles duplicates
+- **anomaly_detector.py**: Contains `BaseAnomalyDetector` abstract class and concrete implementations:
+  - `StatisticalOutlierDetector` (z-score, IQR, percentile methods)
+  - `TemporalAnomalyDetector` (spikes, drops, volatility)
+  - `GeographicAnomalyDetector` (regional deviations, connection graph-based)
+  - `CrossSourceComparator` (СберИндекс vs Rosstat - currently disabled)
+  - `LogicalConsistencyChecker` (contradictions, impossible values)
+- **detector_manager.py**: Manages detector lifecycle, applies configuration profiles, tracks statistics, handles errors gracefully
+- **exporter.py**: Generates all output files with timestamps
 
-## Test Organization (`tests/`)
+## Tests (`tests/`)
 
-Tests mirror the source structure with `test_*.py` files:
-- Unit tests for individual components
-- Integration tests for full pipeline
-- Detector-specific tests
-- Configuration and validation tests
+Comprehensive test suite covering all components:
+
+```
+tests/
+├── __init__.py
+├── test_data_loader.py                    # Data loading and merging tests
+├── test_detectors.py                      # Detector functionality tests
+├── test_detector_conditional_loading.py   # Detector enable/disable tests
+├── test_detector_manager_profiles.py      # Profile switching tests
+├── test_auto_tuner_fpr.py                 # Auto-tuning tests
+├── test_config_validator.py               # Configuration validation tests
+├── test_error_handler.py                  # Error handling tests
+├── test_exporter.py                       # Export functionality tests
+├── test_full_pipeline_integration.py      # End-to-end pipeline tests
+└── [additional test files]
+```
 
 ## Documentation (`docs/`)
 
-- Implementation summaries for each task (task_*.md)
-- Methodology documentation (missing_value_methodology.md, enhanced_detection_methodology.md)
-- Configuration guides (config_migration_guide.md)
-- Quick reference guides
+Detailed methodology and usage documentation:
 
-## Examples (`examples/`)
+```
+docs/
+├── missing_value_methodology.md           # Missing value handling approach
+├── enhanced_detection_methodology.md      # Detection algorithm details
+├── config_migration_guide.md              # Configuration migration guide
+├── auto_tuning_quick_reference.md         # Auto-tuning usage guide
+├── configuration_profiles_quick_reference.md
+├── indicator_filtering_usage.md
+├── missingness_analysis_usage.md
+├── municipality_flagging_usage.md
+└── archive/                               # Archived documentation
+```
 
-Demonstration scripts for key features:
-- Auto-tuning workflows
-- Configuration management
-- Profile loading
-- Threshold validation
+## Data Directories
+
+```
+rosstat/                        # Rosstat data files (not in repo)
+├── 2_bdmo_population.parquet
+├── 3_bdmo_migration.parquet
+└── 4_bdmo_salary.parquet
+
+t_dict_municipal/               # Municipal dictionary (not in repo)
+├── t_dict_municipal_districts.xlsx
+└── t_dict_municipal_districts_poly.gpkg
+
+output/                         # Generated results (created automatically)
+├── anomalies_master_*.csv
+├── anomalies_summary_*.xlsx
+├── viz_*.png
+├── methodology_*.md
+├── example_cases_*.md
+└── anomaly_detection.log
+```
 
 ## Architecture Patterns
 
-### Pipeline Pattern
-`main.py` orchestrates a sequential pipeline:
-1. Load configuration
-2. Load and merge data
-3. Run detectors (via DetectorManager)
-4. Aggregate results
-5. Export outputs
-
-### Detector Pattern
-All detectors inherit from `BaseAnomalyDetector` and implement:
-- `detect(df)` - Main detection logic
-- Return standardized anomaly records
+### Inheritance Hierarchy
+- All detectors inherit from `BaseAnomalyDetector` abstract base class
+- Provides common methods: `calculate_severity_score()`, `create_anomaly_record()`, `get_data_source()`
+- Each detector implements `detect(df: pd.DataFrame) -> pd.DataFrame`
 
 ### Error Handling
-- Graceful degradation - one detector failure doesn't stop others
-- Centralized error handler with context tracking
-- Structured logging with extra fields
+- Centralized error handler in `error_handler.py`
+- Graceful degradation: detector failures don't stop pipeline
+- Detailed error context logging with structured data
 
 ### Configuration Management
-- YAML-based configuration
-- Profile system (strict/normal/relaxed/custom_russia)
-- Threshold manager for runtime adjustments
-- Validation on load
+- YAML-based configuration with validation
+- Profile system for threshold presets (strict/normal/relaxed/custom_russia)
+- Runtime profile switching supported via `DetectorManager`
 
-## Data Flow
+### Data Flow
+1. `main.py` → loads config
+2. `DataLoader` → loads and merges all data sources
+3. `DetectorManager` → runs all enabled detectors
+4. `ResultsAggregator` → combines and ranks anomalies
+5. `ResultsExporter` → generates all output files
 
-```
-Parquet/Excel Files → DataLoader → Unified DataFrame
-                                         ↓
-                                  DetectorManager
-                                         ↓
-                    [Statistical, Temporal, Geographic, Logical]
-                                         ↓
-                                  ResultsAggregator
-                                         ↓
-                                    Exporter
-                                         ↓
-                        [CSV, Excel, PNG, Markdown]
-```
-
-## Naming Conventions
-
-- **Files**: snake_case (e.g., `data_loader.py`)
-- **Classes**: PascalCase (e.g., `DataLoader`, `StatisticalOutlierDetector`)
-- **Functions/Methods**: snake_case (e.g., `load_data`, `detect_outliers`)
-- **Constants**: UPPER_SNAKE_CASE (e.g., `REQUIRED_THRESHOLDS`)
-- **Config keys**: snake_case (e.g., `z_score`, `detection_profile`)
-
-## Key Design Decisions
-
-- **Temporal data preservation**: Date columns maintained throughout pipeline for trend analysis
-- **Connection graph**: Real territorial connections (4.7M) used instead of administrative boundaries
-- **Robust statistics**: Median/MAD preferred over mean/std for outlier resistance
-- **Detector independence**: Each detector runs in isolation with error handling
-- **Profile-based thresholds**: Easy switching between detection modes
-- **Source mapping**: Explicit tracking of data source for each column
+### Naming Conventions
+- Snake_case for functions and variables
+- PascalCase for classes
+- Descriptive names: `detect_zscore_outliers()`, `StatisticalOutlierDetector`
+- Prefix indicators with source: `consumption_*`, `salary_*`, `population_*`
